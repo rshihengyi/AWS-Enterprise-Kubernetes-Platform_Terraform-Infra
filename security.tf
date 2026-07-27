@@ -1,15 +1,22 @@
 /*
-    The RDS is allowed to accept traffic from the worker nodes
+    The RDS is allowed to accept traffic from the worker nodes using port 5432
 */
 
-resource "aws_security_group" "rds" {
+resource "aws_security_group" "rds_sg" {
   name   = "rds-sg"
   vpc_id = aws_vpc.my_vpc.id
 
   ingress = [
     {
-      description     = "Allow traffic from worker nodes to RDS"
-      from_port       = 5432
+      description = "Allow traffic from worker nodes to RDS"
+
+      /* 
+        **Note: Choosing the port number is engine specific.
+        Every service specifies which TCP/UDP port it listens on by default
+
+      */
+
+      from_port       = 5432 // Default port for PostgreSQL connections over TCP
       to_port         = 5432
       protocol        = "tcp"
       security_groups = [module.eks.node_security_group_id]
