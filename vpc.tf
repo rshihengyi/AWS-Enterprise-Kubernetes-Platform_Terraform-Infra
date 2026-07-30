@@ -183,3 +183,13 @@ resource "aws_nat_gateway" "NAT_GW_b" {
   depends_on    = [aws_internet_gateway.my_IWG]
 }
 
+// Private Link between VPC and EKS
+resource "aws_vpc_endpoint" "for_eks" {
+  vpc_id       = aws_vpc.my_vpc.id
+  service_name = "com.amazonaws.${var.my_region}.eks-auth"
+  vpc_endpoint_type = "Interface"
+
+  tags = {
+    Environment = "dev"
+  }
+}
