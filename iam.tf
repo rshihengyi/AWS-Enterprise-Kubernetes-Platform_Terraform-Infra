@@ -275,6 +275,63 @@ resource "aws_iam_policy" "controller_permissions" {
 
 }
 
+/* IAM role for ExternalDNS
+    - Allow ExternalDNS to alter Route53 A record
+*/
+resource "aws_iam_role" "externalDNS_IAM_role"{
+  name = "ExternalDNS-IAM-Role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]   
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "externalDNS_pa" {
+  role = aws_iam_role.externalDNS_IAM_role.name
+  policy_arn = aws_iam_policy.externalDNS_permissions.arn
+}
+
+// ExternalDNS needs permission to write Route53 records -> 
+// Official Documentation: https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/aws/#iam-policy
+resource "aws_iam_policy" "externalDNS_permissions" {
+  name = "ExternalDNS-permissions"
+  policy = jsonencode({
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResources"
+      ],
+      "Resource": [
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+})
+}
+
+
 /* IAM role for Worker Nodes
     - Allow EKS Pod Identity Agent to ask for temp credentials to AWS
 */
