@@ -19,6 +19,16 @@ variable "db_password" {
   default = null
 }
 
+variable "GITHUB_USERNAME" {
+  type    = string
+  default = null
+}
+
+variable "TF_REPO" {
+  type    = string
+  default = null
+}
+
 # locals {
 #   private_subnet_a_id = [
 #     aws_subnet.private_1a.id,

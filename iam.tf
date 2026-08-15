@@ -1,338 +1,4 @@
-// IAM role for EKS worker nodes
-
-/* Minimum Parameters: 
-    - name:                 role name
-    - assume_role_policy:   trust policy (who can wear the hat)
-*/
-resource "aws_iam_role" "lb_controller" {
-  name = "Load-Balance-Controller"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-/* Minimum Parameters: 
-    - role:                 what role to attach permissions to
-    - policy_arn:           the iam policy arn
-*/
-resource "aws_iam_role_policy_attachment" "controller_pa" {
-  role       = aws_iam_role.lb_controller.name
-  policy_arn = aws_iam_policy.controller_permissions.arn
-}
-
-
-/* Minimum Parameters: 
-    - name:                 custom name for policy list
-    - policy:               (list of permissions to allow for whoever wears the hat)
-*/
-// Source: https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonEKSWorkerNodePolicy.html
-resource "aws_iam_policy" "controller_permissions" {
-  name = "Controller-Permissions-List"
-  // AmazonEKSLoadBalancingPolicy 
-  policy = jsonencode(
-    {
-
-      "Version" : "2012-10-17",
-      "Statement" : [
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "elasticloadbalancing:CreateLoadBalancer",
-            "elasticloadbalancing:CreateTargetGroup",
-            "elasticloadbalancing:CreateListener",
-            "elasticloadbalancing:CreateRule",
-            "ec2:CreateSecurityGroup"
-          ],
-          "Resource" : "*",
-          "Condition" : {
-            "StringEquals" : {
-              "aws:RequestTag/eks:eks-cluster-name" : "${module.eks.cluster_name}"
-            },
-            "ForAllValues:StringEquals" : {
-              "aws:TagKeys" : [
-                "eks:eks-cluster-name",
-                "ingress.eks.amazonaws.com/stack",
-                "ingress.eks.amazonaws.com/resource",
-                "service.eks.amazonaws.com/stack",
-                "service.eks.amazonaws.com/resource"
-              ]
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:CreateSecurityGroup"
-          ],
-          "Resource" : "arn:aws:ec2:*:*:vpc/*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "elasticloadbalancing:RegisterTargets"
-          ],
-          "Resource" : "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:AuthorizeSecurityGroupIngress"
-          ],
-          "Resource" : "arn:aws:ec2:*:*:security-group-rule/*",
-          "Condition" : {
-            "StringEquals" : {
-              "aws:RequestTag/eks:eks-cluster-name" : "${module.eks.cluster_name}"
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:AuthorizeSecurityGroupIngress",
-            "ec2:RevokeSecurityGroupIngress"
-          ],
-          "Resource" : "arn:aws:ec2:*:*:security-group/*",
-          "Condition" : {
-            "StringLike" : {
-              "aws:ResourceTag/Name" : "eks-cluster-sg*"
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:AuthorizeSecurityGroupIngress",
-            "ec2:RevokeSecurityGroupIngress"
-          ],
-          "Resource" : "arn:aws:ec2:*:*:security-group/*",
-          "Condition" : {
-            "StringEquals" : {
-              "aws:ResourceTag/eks:eks-cluster-name" : "${module.eks.cluster_name}"
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "elasticloadbalancing:AddTags"
-          ],
-          "Resource" : "*",
-          "Condition" : {
-            "StringEquals" : {
-              "elasticloadbalancing:CreateAction" : [
-                "CreateLoadBalancer",
-                "CreateTargetGroup",
-                "CreateListener",
-                "CreateRule"
-              ]
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:CreateTags"
-          ],
-          "Resource" : "*",
-          "Condition" : {
-            "StringEquals" : {
-              "ec2:CreateAction" : [
-                "CreateSecurityGroup",
-                "AuthorizeSecurityGroupIngress"
-              ]
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "elasticloadbalancing:ModifyLoadBalancerAttributes",
-            "elasticloadbalancing:SetIpAddressType",
-            "elasticloadbalancing:SetSecurityGroups",
-            "elasticloadbalancing:SetSubnets",
-            "elasticloadbalancing:ModifyTargetGroup",
-            "elasticloadbalancing:ModifyTargetGroupAttributes",
-            "elasticloadbalancing:ModifyListener",
-            "elasticloadbalancing:AddListenerCertificates",
-            "elasticloadbalancing:ModifyListenerAttributes",
-            "elasticloadbalancing:RemoveListenerCertificates",
-            "elasticloadbalancing:ModifyRule",
-            "elasticloadbalancing:ModifyIpPools",
-            "elasticloadbalancing:ModifyCapacityReservation",
-            "elasticloadbalancing:DescribeLoadBalancers"
-          ],
-          "Resource" : "*",
-          "Condition" : {
-            "StringEquals" : {
-              "aws:ResourceTag/eks:eks-cluster-name" : "${module.eks.cluster_name}"
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "wafv2:AssociateWebACL",
-            "wafv2:DisassociateWebACL"
-          ],
-          "Resource" : [
-            "arn:aws:wafv2:*:*:*/webacl/*/*",
-            "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
-          ]
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "shield:CreateProtection",
-            "shield:DeleteProtection"
-          ],
-          "Resource" : "*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "shield:TagResource"
-          ],
-          "Resource" : "arn:aws:shield::*:protection/*",
-          "Condition" : {
-            "StringEquals" : {
-              "aws:RequestTag/eks:eks-cluster-name" : "${module.eks.cluster_name}"
-            },
-            "ForAllValues:StringEquals" : {
-              "aws:TagKeys" : [
-                "eks:eks-cluster-name",
-                "ingress.eks.amazonaws.com/stack",
-                "ingress.eks.amazonaws.com/resource",
-                "service.eks.amazonaws.com/stack",
-                "service.eks.amazonaws.com/resource"
-              ]
-            }
-          }
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "cognito-idp:DescribeUserPoolClient",
-            "acm:ListCertificates",
-            "acm:DescribeCertificate",
-            "wafv2:GetWebACL",
-            "wafv2:GetWebACLForResource",
-            "elasticloadbalancing:SetWebAcl",
-            "elasticloadbalancing:DescribeTargetGroups",
-            "elasticloadbalancing:SetRulePriorities"
-          ],
-          "Resource" : "*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ec2:DescribeAccountAttributes",
-            "ec2:DescribeAddresses",
-            "ec2:DescribeInternetGateways",
-            "ec2:DescribeSecurityGroups",
-            "ec2:DescribeSubnets",
-            "ec2:DescribeVpcs",
-            "ec2:DescribeVpcClassicLink",
-            "ec2:DescribeInstances",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:DescribeClassicLinkInstances",
-            "ec2:DescribeRouteTables",
-            "ec2:DescribeCoipPools",
-            "ec2:GetCoipPoolUsage",
-            "ec2:GetSecurityGroupsForVpc",
-            "ec2:DescribeVpcPeeringConnections",
-            "ec2:DescribeIpamPools"
-          ],
-          "Resource" : "*"
-        },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "iam:CreateServiceLinkedRole"
-          ],
-          "Resource" : "arn:aws:iam::*:role/aws-service-role/elasticloadbalancing.amazonaws.com/AWSServiceRoleForElasticLoadBalancing",
-          "Condition" : {
-            "StringEquals" : {
-              "iam:AWSServiceName" : "elasticloadbalancing.amazonaws.com"
-            }
-          }
-        }
-      ]
-
-
-    }
-  )
-
-
-}
-
-/* IAM role for ExternalDNS
-    - Allow ExternalDNS to alter Route53 A record
-*/
-resource "aws_iam_role" "externalDNS_IAM_role"{
-  name = "ExternalDNS-IAM-Role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]   
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "externalDNS_pa" {
-  role = aws_iam_role.externalDNS_IAM_role.name
-  policy_arn = aws_iam_policy.externalDNS_permissions.arn
-}
-
-// ExternalDNS needs permission to write Route53 records -> 
-// Official Documentation: https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/aws/#iam-policy
-resource "aws_iam_policy" "externalDNS_permissions" {
-  name = "ExternalDNS-permissions"
-  policy = jsonencode({
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "route53:ChangeResourceRecordSets",
-        "route53:ListResourceRecordSets",
-        "route53:ListTagsForResources"
-      ],
-      "Resource": [
-        "arn:aws:route53:::hostedzone/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "route53:ListHostedZones"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
-})
-}
-
-
-/* IAM role for Worker Nodes
+/* IAM role for Pod Identity Agent itself
     - Allow EKS Pod Identity Agent to ask for temp credentials to AWS
 */
 resource "aws_iam_role" "worker_node_IAM_role" {
@@ -341,8 +7,8 @@ resource "aws_iam_role" "worker_node_IAM_role" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
         Effect = "Allow"
+        Action = "sts:AssumeRole"
         Sid    = ""
         Principal = {
           Service = "ec2.amazonaws.com"
@@ -359,18 +25,217 @@ resource "aws_iam_role_policy_attachment" "worker_pa" {
 
 resource "aws_iam_policy" "worker_node_permissions" {
   name = "worker-node-permissions"
-  policy = jsonencode(
-    {
-      "Version" : "2012-10-17",
-      "Statement" : [
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : "eks-auth:AssumeRoleForPodIdentity",
+        "Resource" : "*"
+      }
+    ]
+  })
+}
+
+/* 
+  IAM role for LB controller (Pod Identity IAM)
+
+  Source: https://docs.aws.amazon.com/eks/latest/userguide/pod-id-association.html 
+  Minimum Parameters: 
+    - name:                 role name
+    - assume_role_policy:   trust policy (who can wear the hat)
+
+  Principal: Who can ask for aws credentials? - eks pods
+
+
+*/
+
+resource "aws_iam_role" "lb_controller" {
+  name = "Load-Balancer-Controller-IAM-Role"
+  assume_role_policy = jsonencode({
+    "Version" = "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
+        "Effect": "Allow",
+
+        "Action": [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ],
+
+        "Principal": {
+            "Service": "pods.eks.amazonaws.com"
+        }   
+      }
+    ]
+  })
+}
+
+resource "aws_eks_pod_identity_association" "lb_controller" {
+  cluster_name    = module.eks.cluster_name
+  namespace       = "kube-system"
+  service_account = "aws-load-balancer-controller"  // This parameter is used if a pod needs to access aws resources. Defined in serviceaccount.yaml
+  role_arn        = aws_iam_role.lb_controller.arn
+}
+
+// Retrieve policy from github
+data "http" "lb_controller_iam_policy" {
+  url = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/refs/heads/main/docs/install/iam_policy.json"
+}
+
+resource "aws_iam_policy" "controller_permissions" {
+  name = "Controller-Permissions-List"
+  policy = data.http.lb_controller_iam_policy.response_body
+}
+
+resource "aws_iam_role_policy_attachment" "controller_pa" {
+  role       = aws_iam_role.lb_controller.name
+  policy_arn = aws_iam_policy.controller_permissions.arn
+}
+
+
+
+/* IAM role for ExternalDNS (Pod Identity Agent IAM association)
+    - Allow ExternalDNS to alter Route53 A record
+*/
+
+//Source: https://docs.aws.amazon.com/eks/latest/userguide/pod-id-association.html 
+resource "aws_iam_role" "externalDNS_IAM_role"{
+  name = "ExternalDNS-IAM-Role"
+  assume_role_policy = jsonencode({
+    "Version":"2012-10-17",
+    "Statement": [
         {
-          "Effect" : "Allow",
-          "Action" : [
-            "eks-auth:AssumeRoleForPodIdentity"
+            "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
+            "Effect": "Allow",
+
+            "Action": [
+                "sts:AssumeRole",
+                "sts:TagSession"
+            ],
+
+            "Principal": {
+                "Service": "pods.eks.amazonaws.com"
+            }  
+        }
+    ]
+  })
+}
+
+resource "aws_eks_pod_identity_association" "externalDNS" {
+  cluster_name = module.eks.cluster_name
+  namespace = "kube-system"
+  service_account = "ExternalDNS"
+  role_arn = aws_iam_role.externalDNS_IAM_role.arn
+}
+
+
+resource "aws_iam_role_policy_attachment" "externalDNS_pa" {
+  role = aws_iam_role.externalDNS_IAM_role.name
+  policy_arn = aws_iam_policy.externalDNS_permissions.arn
+}
+
+// ExternalDNS needs permission to write Route53 records -> 
+// Official Documentation: https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/aws/#iam-policy
+resource "aws_iam_policy" "externalDNS_permissions" {
+  name = "ExternalDNS-permissions"
+  policy = jsonencode(
+        {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "route53:ChangeResourceRecordSets",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResources"
           ],
-          "Resource" : "*"
+          "Resource": [
+            "arn:aws:route53:::hostedzone/*"
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "route53:ListHostedZones"
+          ],
+          "Resource": [
+            "*"
+          ]
         }
       ]
     }
   )
+}
+
+/* IAM role for GitHub Actions to provision AWS resources (IRSA)
+  - this role applies to the provider -> Principal = "Federated":  "arn:aws:iam::<aws_id>:oidc-provider/MyProvider"
+*/
+
+// Get AWS account id
+data "aws_caller_identity" "current" {}
+
+resource "aws_iam_role" "github_actions_architecture" {
+  name = "GitHub-Actions-TFArchitecture"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+        }
+
+        //Specify that only this workflow can assume this role
+        Condition = {
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = "repo:${var.GITHUB_USERNAME}/${var.TF_REPO}:*"
+          }
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_architecture_pa" {
+  role = aws_iam_role.github_actions_architecture.name
+  policy_arn = aws_iam_policy.architecture_permissions.arn
+}
+
+resource "aws_iam_policy" "architecture_permissions" {
+  name = "GitHub-Actions-Architecture-Permissions"
+  policy = jsonencode({
+    Version = "2012-10-17" // IAM policy language version (constant)
+    Statement = [{
+      Action = [ //List of permissions for role
+        "ec2:*",
+        "eks:*",
+        "rds:*",
+        "vpc:*",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:AttachRolePolicy",
+        "route53:*",
+        "acm:*",
+        "elasticloadbalancing:*"
+        ]
+      Effect = "Allow"
+      Sid = "" // Optional statement ID for readability
+
+      /*
+        Specifies which AWS resources the actions listed 
+        in the "Action" field are allowed or denied on.
+      */
+
+      // There is no specific resource to attach role
+      Resource = "*" 
+
+    }]
+  })
 }
