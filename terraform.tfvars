@@ -8,5 +8,4 @@ db_password = "ThisIsATest123"
 
 GITHUB_USERNAME = "rshihengyi"
 
-TF_REPO = "AWS-Cloud-Web-Application-Deployment_Terraform-Infra"
-
+TF_REPO = "AWS-Enterprise-Kubernetes-Platform_Terraform-Infra"
