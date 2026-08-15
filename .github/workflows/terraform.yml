@@ -1,0 +1,85 @@
+
+name: 'Terraform'
+
+on:
+# Manually trigger workflow
+  workflow_dispatch: 
+
+permissions:
+  id-token: write # needed for OIDC
+  contents: read
+
+jobs:
+  terraform-plan:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    environment: dev
+
+    # # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    # defaults:
+    #   run:
+    #     shell: bash
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v4
+  
+      # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+  
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
+          aws-region: us-east-1
+  
+      # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+      - name: Terraform Init
+        run: terraform init
+  
+      # Checks that all Terraform configuration files adhere to a canonical format
+      - name: Terraform Format
+        run: terraform fmt -check
+  
+      # Generates an execution plan for Terraform
+      - name: Terraform Plan
+        run: terraform plan -out=tf_plan
+        
+      # Uploads the plan file for the Apply job to use
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tf_plan
+          path: tf_plan
+        
+  terraform-apply:
+    name: 'Terraform Apply'
+    runs-on: ubuntu-latest
+    environment: dev
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4      
+    
+    # Download the tf_plan to use
+      - name: Download Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tf_plan
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.0
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Apply
+        run: terraform apply -auto-approve
