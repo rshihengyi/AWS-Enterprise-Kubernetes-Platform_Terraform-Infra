@@ -58,7 +58,7 @@ resource "aws_iam_role" "lb_controller" {
         "Effect" : "Allow",
 
         "Action" : [
-          "sts:AssumeRoleForPodIdentity",
+          "sts:AssumeRole",
           "sts:TagSession"
         ],
 
@@ -109,7 +109,7 @@ resource "aws_iam_role" "externalDNS_IAM_role" {
         "Effect" : "Allow",
 
         "Action" : [
-          "sts:AssumeRoleForPodIdentity",
+          "sts:AssumeRole",
           "sts:TagSession"
         ],
 
