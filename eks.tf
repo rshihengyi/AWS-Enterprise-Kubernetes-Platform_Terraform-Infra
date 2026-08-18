@@ -6,7 +6,11 @@ module "eks" {
   kubernetes_version = "1.36"
 
   addons = {
-    coredns = {}
+    coredns = {
+      before_compute = true
+      # addon_version = "v1.14.3-eksbuild.3"
+      # resolve_conflicts = "OVERWRITE"
+    }
     eks-pod-identity-agent = {
       before_compute = true
     }

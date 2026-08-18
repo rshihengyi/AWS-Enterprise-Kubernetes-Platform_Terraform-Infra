@@ -46,27 +46,25 @@ resource "aws_iam_policy" "worker_node_permissions" {
     - assume_role_policy:   trust policy (who can wear the hat)
 
   Principal: Who can ask for aws credentials? - eks pods
-
-
 */
 
 resource "aws_iam_role" "lb_controller" {
   name = "Load-Balancer-Controller-IAM-Role"
   assume_role_policy = jsonencode({
     "Version" = "2012-10-17",
-    "Statement": [
+    "Statement" : [
       {
-        "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
-        "Effect": "Allow",
+        "Sid" : "AllowEksAuthToAssumeRoleForPodIdentity",
+        "Effect" : "Allow",
 
-        "Action": [
-          "sts:AssumeRole",
+        "Action" : [
+          "sts:AssumeRoleForPodIdentity",
           "sts:TagSession"
         ],
 
-        "Principal": {
-            "Service": "pods.eks.amazonaws.com"
-        }   
+        "Principal" : {
+          "Service" : "pods.eks.amazonaws.com"
+        }
       }
     ]
   })
@@ -75,7 +73,7 @@ resource "aws_iam_role" "lb_controller" {
 resource "aws_eks_pod_identity_association" "lb_controller" {
   cluster_name    = module.eks.cluster_name
   namespace       = "kube-system"
-  service_account = "aws-load-balancer-controller"  // This parameter is used if a pod needs to access aws resources. Defined in serviceaccount.yaml
+  service_account = "aws-load-balancer-controller" // This parameter is used if a pod needs to access aws resources. Defined in serviceaccount.yaml
   role_arn        = aws_iam_role.lb_controller.arn
 }
 
@@ -85,7 +83,7 @@ data "http" "lb_controller_iam_policy" {
 }
 
 resource "aws_iam_policy" "controller_permissions" {
-  name = "Controller-Permissions-List"
+  name   = "Controller-Permissions-List"
   policy = data.http.lb_controller_iam_policy.response_body
 }
 
@@ -101,38 +99,38 @@ resource "aws_iam_role_policy_attachment" "controller_pa" {
 */
 
 //Source: https://docs.aws.amazon.com/eks/latest/userguide/pod-id-association.html 
-resource "aws_iam_role" "externalDNS_IAM_role"{
+resource "aws_iam_role" "externalDNS_IAM_role" {
   name = "ExternalDNS-IAM-Role"
   assume_role_policy = jsonencode({
-    "Version":"2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowEksAuthToAssumeRoleForPodIdentity",
-            "Effect": "Allow",
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "AllowEksAuthToAssumeRoleForPodIdentity",
+        "Effect" : "Allow",
 
-            "Action": [
-                "sts:AssumeRole",
-                "sts:TagSession"
-            ],
+        "Action" : [
+          "sts:AssumeRoleForPodIdentity",
+          "sts:TagSession"
+        ],
 
-            "Principal": {
-                "Service": "pods.eks.amazonaws.com"
-            }  
+        "Principal" : {
+          "Service" : "pods.eks.amazonaws.com"
         }
+      }
     ]
   })
 }
 
 resource "aws_eks_pod_identity_association" "externalDNS" {
-  cluster_name = module.eks.cluster_name
-  namespace = "kube-system"
-  service_account = "ExternalDNS"
-  role_arn = aws_iam_role.externalDNS_IAM_role.arn
+  cluster_name    = module.eks.cluster_name
+  namespace       = "kube-system"
+  service_account = "externaldns"
+  role_arn        = aws_iam_role.externalDNS_IAM_role.arn
 }
 
 
 resource "aws_iam_role_policy_attachment" "externalDNS_pa" {
-  role = aws_iam_role.externalDNS_IAM_role.name
+  role       = aws_iam_role.externalDNS_IAM_role.name
   policy_arn = aws_iam_policy.externalDNS_permissions.arn
 }
 
@@ -141,26 +139,26 @@ resource "aws_iam_role_policy_attachment" "externalDNS_pa" {
 resource "aws_iam_policy" "externalDNS_permissions" {
   name = "ExternalDNS-permissions"
   policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
         {
-      "Version": "2012-10-17",
-      "Statement": [
-        {
-          "Effect": "Allow",
-          "Action": [
+          "Effect" : "Allow",
+          "Action" : [
             "route53:ChangeResourceRecordSets",
             "route53:ListResourceRecordSets",
             "route53:ListTagsForResources"
           ],
-          "Resource": [
+          "Resource" : [
             "arn:aws:route53:::hostedzone/*"
           ]
         },
         {
-          "Effect": "Allow",
-          "Action": [
+          "Effect" : "Allow",
+          "Action" : [
             "route53:ListHostedZones"
           ],
-          "Resource": [
+          "Resource" : [
             "*"
           ]
         }
@@ -204,7 +202,7 @@ resource "aws_iam_role" "github_actions_architecture" {
 }
 
 resource "aws_iam_role_policy_attachment" "github_actions_architecture_pa" {
-  role = aws_iam_role.github_actions_architecture.name
+  role       = aws_iam_role.github_actions_architecture.name
   policy_arn = aws_iam_policy.architecture_permissions.arn
 }
 
@@ -217,16 +215,17 @@ resource "aws_iam_policy" "architecture_permissions" {
         "ec2:*",
         "eks:*",
         "rds:*",
-        "vpc:*",
-        "iam:CreateRole",
-        "iam:DeleteRole",
-        "iam:AttachRolePolicy",
+        //"vpc:*",
+        # "iam:CreateRole",
+        # "iam:DeleteRole",
+        # "iam:AttachRolePolicy",
+        "iam:*",
         "route53:*",
         "acm:*",
         "elasticloadbalancing:*"
-        ]
+      ]
       Effect = "Allow"
-      Sid = "" // Optional statement ID for readability
+      Sid    = "" // Optional statement ID for readability
 
       /*
         Specifies which AWS resources the actions listed 
@@ -234,7 +233,7 @@ resource "aws_iam_policy" "architecture_permissions" {
       */
 
       // There is no specific resource to attach role
-      Resource = "*" 
+      Resource = "*"
 
     }]
   })
