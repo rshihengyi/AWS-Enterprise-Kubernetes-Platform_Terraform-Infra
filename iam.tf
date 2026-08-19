@@ -1,8 +1,8 @@
-/* IAM role for Pod Identity Agent itself
-    - Allow EKS Pod Identity Agent to ask for temp credentials to AWS
+/* IAM role for Worker Nodes
+    - allows the Pod Identity Agent to reach EKS Auth API on behalf of pods
 */
-resource "aws_iam_role" "worker_node_IAM_role" {
-  name = "EKS-Worker-Node-IAM-role"
+resource "aws_iam_role" "identity_agent_IAM_role" {
+  name = "EKS-Worker-Node-IAM-role_For_Agent"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -11,19 +11,19 @@ resource "aws_iam_role" "worker_node_IAM_role" {
         Action = "sts:AssumeRole"
         Sid    = ""
         Principal = {
-          Service = "ec2.amazonaws.com"
+          Service = "pods.eks.amazonaws.com"
         }
       }
     ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "worker_pa" {
-  role       = aws_iam_role.worker_node_IAM_role.name
-  policy_arn = aws_iam_policy.worker_node_permissions.arn
+resource "aws_iam_role_policy_attachment" "agent_pa" {
+  role       = aws_iam_role.identity_agent_IAM_role.name
+  policy_arn = aws_iam_policy.agent_permissions.arn
 }
 
-resource "aws_iam_policy" "worker_node_permissions" {
+resource "aws_iam_policy" "agent_permissions" {
   name = "worker-node-permissions"
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -72,7 +72,7 @@ resource "aws_iam_role" "lb_controller" {
 
 resource "aws_eks_pod_identity_association" "lb_controller" {
   cluster_name    = module.eks.cluster_name
-  namespace       = "kube-system"
+  namespace       = "kube-system" //Match namespace of service account
   service_account = "aws-load-balancer-controller" // This parameter is used if a pod needs to access aws resources. Defined in serviceaccount.yaml
   role_arn        = aws_iam_role.lb_controller.arn
 }
