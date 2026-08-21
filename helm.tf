@@ -8,7 +8,7 @@ resource "helm_release" "ingress_controller" {
   name       = "aws-lb-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
-  version    = "1.5.5"
+  version    = "3.5.0"
   namespace  = "kube-system"
 
   /* need to specify:
@@ -34,10 +34,10 @@ resource "helm_release" "ingress_controller" {
     },
     {
       name  = "serviceAccount.create" // 
-      value = false
+      value = true
     },
     {
-      name  = "serviceAcount.name"
+      name  = "serviceAccount.name"
       value = "aws-load-balancer-controller"
     }
   ]
@@ -66,10 +66,10 @@ resource "helm_release" "external_dns" {
     },
     {
       name  = "serviceAccount.create"
-      value = false
+      value = true
     },
     {
-      name  = "serviceAcount.name"
+      name  = "serviceAccount.name"
       value = "external-dns"
     }
   ]
