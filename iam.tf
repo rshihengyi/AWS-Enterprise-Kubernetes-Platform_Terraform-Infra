@@ -124,7 +124,7 @@ resource "aws_iam_role" "externalDNS_IAM_role" {
 resource "aws_eks_pod_identity_association" "externalDNS" {
   cluster_name    = module.eks.cluster_name
   namespace       = "kube-system"
-  service_account = "externaldns"
+  service_account = "external-dns"
   role_arn        = aws_iam_role.externalDNS_IAM_role.arn
 }
 
@@ -147,7 +147,9 @@ resource "aws_iam_policy" "externalDNS_permissions" {
           "Action" : [
             "route53:ChangeResourceRecordSets",
             "route53:ListResourceRecordSets",
-            "route53:ListTagsForResources"
+            "route53:ListTagsForResources",
+            "route53:ListHostedZones"
+            #"route53:*"
           ],
           "Resource" : [
             "arn:aws:route53:::hostedzone/*"
