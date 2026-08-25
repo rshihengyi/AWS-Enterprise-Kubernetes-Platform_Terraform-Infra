@@ -8,9 +8,9 @@ module "eks" {
   addons = {
     coredns = {
       before_compute = true
-     # addon_version = "v1.14.3-eksbuild.3"
+      # addon_version = "v1.14.3-eksbuild.3"
       resolve_conflicts_on_create = "OVERWRITE" // 
-     # most_recent = "true"
+      # most_recent = "true"
     }
     eks-pod-identity-agent = {
       before_compute = true

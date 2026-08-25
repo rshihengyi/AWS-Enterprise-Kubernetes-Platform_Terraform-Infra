@@ -72,7 +72,7 @@ resource "aws_iam_role" "lb_controller" {
 
 resource "aws_eks_pod_identity_association" "lb_controller" {
   cluster_name    = module.eks.cluster_name
-  namespace       = "kube-system" //Match namespace of service account
+  namespace       = "kube-system"                  //Match namespace of service account
   service_account = "aws-load-balancer-controller" // This parameter is used if a pod needs to access aws resources. Defined in serviceaccount.yaml
   role_arn        = aws_iam_role.lb_controller.arn
 }
