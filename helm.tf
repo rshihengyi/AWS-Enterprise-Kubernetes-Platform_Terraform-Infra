@@ -1,5 +1,5 @@
 /*
-    ArgoCD Helm Chart v5.9.5
+    ArgoCD Helm Chart v9.5.9
 */
 
 resource "kubernetes_namespace_v1" "argocd" {
@@ -13,7 +13,6 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
   repository = "https://argoproj.github.io/argo-helm"
   version    = "9.5.9"
-  create_namespace = true
   namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
 }
 

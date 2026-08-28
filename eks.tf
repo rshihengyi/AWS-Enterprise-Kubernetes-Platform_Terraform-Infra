@@ -51,3 +51,14 @@ module "eks" {
     Terraform   = "true"
   }
 }
+
+# data "aws_iam_user" "me_IAM_user" {
+#   user_name = "me"
+# }
+
+# resource "aws_eks_access_entry" "me" {
+#   cluster_name = module.eks.cluster_name
+#   principal_arn = data.aws_iam_user.me_IAM_user.arn
+#  // kubernetes_groups = 
+#   type = "STANDARD"           // "Standard" workflow
+# }
