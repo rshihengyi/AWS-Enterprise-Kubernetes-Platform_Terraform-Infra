@@ -6,6 +6,7 @@ resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
   }
+  depends_on = [module.eks]
 }
 
 resource "helm_release" "argocd" {
@@ -14,81 +15,83 @@ resource "helm_release" "argocd" {
   repository = "https://argoproj.github.io/argo-helm"
   version    = "9.5.9"
   namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
+  depends_on = [module.eks]
 }
 
 # /*
-#     Need Helm charts for:
-#         - Ingress Controller (AWS load balancer controller)
-#         - ExternalDNS
+#     Ingress Controller (AWS load balancer controller) Helm Chart
 # */
 
-# resource "helm_release" "ingress_controller" {
-#   name       = "aws-lb-controller"
-#   repository = "https://aws.github.io/eks-charts"
-#   chart      = "aws-load-balancer-controller"
-#   version    = "3.5.0"
-#   namespace  = "kube-system"
+resource "helm_release" "ingress_controller" {
+  name       = "aws-lb-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  version    = "3.5.0"
+  namespace  = "kube-system"
 
-#   /* need to specify:
-#     - clusterName
-#     - region
-#     - vpcId
-#     - serviceAccount.create
-#     - serviceAcount.name
-# */
+  /* need to specify:
+    - clusterName
+    - region
+    - vpcId
+    - serviceAccount.create
+    - serviceAcount.name
+*/
 
-#   set = [
-#     {
-#       name  = "clusterName"
-#       value = module.eks.cluster_name
-#     },
-#     {
-#       name  = "region"
-#       value = var.my_region
-#     },
-#     {
-#       name  = "vpcId"
-#       value = aws_vpc.my_vpc.id
-#     },
-#     {
-#       name  = "serviceAccount.create" // 
-#       value = true
-#     },
-#     {
-#       name  = "serviceAccount.name"
-#       value = "aws-load-balancer-controller"
-#     }
-#   ]
-# }
+  set = [
+    {
+      name  = "clusterName"
+      value = module.eks.cluster_name
+    },
+    {
+      name  = "region"
+      value = var.my_region
+    },
+    {
+      name  = "vpcId"
+      value = aws_vpc.my_vpc.id
+    },
+    {
+      name  = "serviceAccount.create" // 
+      value = true
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "aws-load-balancer-controller"
+    }
+  ]
+}
 
+/*
+    ExternalDNS Helm Chart
+*/
 
-# resource "helm_release" "external_dns" {
-#   name       = "external-dns"
-#   repository = "https://kubernetes-sigs.github.io/external-dns/"
-#   chart      = "external-dns"
-#   version    = "1.21.1"
-#   namespace  = "kube-system"
+resource "helm_release" "external_dns" {
+  name       = "external-dns"
+  repository = "https://kubernetes-sigs.github.io/external-dns/"
+  chart      = "external-dns"
+  version    = "1.21.1"
+  namespace  = "kube-system"
 
-#   set = [
-#     {
-#       name  = "clusterName"
-#       value = module.eks.cluster_name
-#     },
-#     {
-#       name  = "region"
-#       value = var.my_region
-#     },
-#     {
-#       name  = "vpcId"
-#       value = aws_vpc.my_vpc.id
-#     },
-#     {
-#       name  = "serviceAccount.create"
-#       value = true
-#     },
-#     {
-#       name  = "serviceAccount.name"
-#       value = "external-dns"
-#     }
-#   ]
-# }
+  set = [
+    {
+      name  = "clusterName"
+      value = module.eks.cluster_name
+    },
+    {
+      name  = "region"
+      value = var.my_region
+    },
+    {
+      name  = "vpcId"
+      value = aws_vpc.my_vpc.id
+    },
+    {
+      name  = "serviceAccount.create"
+      value = true
+    },
+    {
+      name  = "serviceAccount.name"
+      value = "external-dns"
+    }
+  ]
+}
