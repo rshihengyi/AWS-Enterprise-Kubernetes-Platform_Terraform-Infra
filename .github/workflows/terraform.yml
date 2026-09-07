@@ -41,7 +41,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/Manual-GitHub-Actions-TFArchitecture
           aws-region: us-east-1
       
       - name: Terraform init
@@ -71,7 +71,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/Manual-GitHub-Actions-TFArchitecture
           aws-region: us-east-1
 
       - name: Setup Terraform
