@@ -1,5 +1,4 @@
 # This is a basic workflow to help you get started with Actions
-
 name: Terraform Plan & Apply
 
 # Controls when the workflow will run
@@ -12,97 +11,25 @@ permissions:
   id-token: write
   contents: read
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  Verify-Format:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-    # Clones repo 
-      - name: Checkout
-        uses: actions/checkout@v4
+    # Check current repo using Node.24 runtime
+    - uses: actions/checkout@v6
 
-      - name: Debug OIDC token claims
-        run: |
-          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -R 'split(".") | .[1] | @base64d | fromjson'
-        env:
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
-          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+    # Download Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v4
 
-      - name: Check token permissions
-        run: echo "$GITHUB_TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null || echo "no token"
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+    - name: Configure AWS credentials
+     uses: aws-actions/configure-aws-credentials@v4
+     with:
+       role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
+       aws-region: us-east-1
 
-      - name: Terraform 
-        run: terraform fmt -check
+    run: terraform init
 
-  Setup:
-    runs-on: ubuntu-latest
-    needs: Verify-Format
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Debug OIDC token claims
-        run: |
-          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -R 'split(".") | .[1] | @base64d | fromjson'
-        env:
-          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
-          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+    run: terraform apply -auto-approve
         
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
-          aws-region: us-east-1
-      
-      - name: Terraform init
-        run: terraform init
-
-      - name: Terraform validate
-        run: terraform validate
-
-      - name: Terraform plan
-        run: terraform plan -out=tf_plan
-
-       # Uploads the plan file for the Apply job to use
-      - name: Upload Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tf_plan
-          path: tf_plan
-
-  Apply:
-    runs-on: ubuntu-latest
-    needs: Setup
-    #environment: dev
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/GitHub-Actions-TFArchitecture
-          aws-region: us-east-1
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3          
-    
-    # Download the tf_plan to use
-      - name: Download Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: tf_plan
-    
-      - name: Terraform init
-        run: terraform init
-
-    # Apply using the tf_plan 
-      - name: Terraform apply
-        run: terraform apply -auto-approve tf_plan
