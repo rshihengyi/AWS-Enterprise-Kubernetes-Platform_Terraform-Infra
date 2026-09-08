@@ -27,6 +27,9 @@ jobs:
         env:
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
           ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+
+      - name: Check token permissions
+        run: echo "$GITHUB_TOKEN" | cut -d. -f2 | base64 -d 2>/dev/null || echo "no token"
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
