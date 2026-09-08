@@ -29,6 +29,9 @@ jobs:
          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/${{ secrets.AWS_OIDC_ROLE }}
          aws-region: us-east-1
 
+    - name: Test aws 
+      run: aws sts get-caller-identity
+
     - name: Initialize Terraform
       run: terraform init
       
