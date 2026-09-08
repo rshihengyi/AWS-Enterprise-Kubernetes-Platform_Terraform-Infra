@@ -5,7 +5,7 @@ provider "aws" {
 // Source: https://developer.hashicorp.com/terraform/tutorials/kubernetes/helm-provider?in=terraform%2Fkubernetes
 provider "helm" {
   kubernetes = {
-    config_path            = "~/.kube/config"
+//    config_path            = "~/.kube/config"
     host                   = module.eks.cluster_endpoint
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     /*
