@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  Apply:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +24,14 @@ jobs:
       uses: hashicorp/setup-terraform@v4
 
     - name: Configure AWS credentials
-     uses: aws-actions/configure-aws-credentials@v4
-     with:
-       role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
-       aws-region: us-east-1
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+         role-to-assume: ${{ secrets.AWS_OIDC_ROLE }}
+         aws-region: us-east-1
 
-    run: terraform init
-
-    run: terraform apply -auto-approve
+    - name: Initialize Terraform
+      run: terraform init
+      
+    - name: Apply Terraform
+      run: terraform apply -auto-approve
         
