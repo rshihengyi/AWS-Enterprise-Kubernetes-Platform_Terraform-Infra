@@ -16,8 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Check current repo using Node.24 runtime
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     # Download Terraform
     - name: Setup Terraform
