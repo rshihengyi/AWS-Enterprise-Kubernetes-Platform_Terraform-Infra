@@ -28,6 +28,7 @@ resource "helm_release" "ingress_controller" {
   chart      = "aws-load-balancer-controller"
   version    = "3.5.0"
   namespace  = "kube-system"
+  depends_on = [module.eks]
 
   /* need to specify:
     - clusterName
@@ -71,6 +72,7 @@ resource "helm_release" "external_dns" {
   chart      = "external-dns"
   version    = "1.21.1"
   namespace  = "kube-system"
+  depends_on = [module.eks]
 
   set = [
     {
