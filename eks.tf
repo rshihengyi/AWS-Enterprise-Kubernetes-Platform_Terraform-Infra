@@ -52,13 +52,18 @@ module "eks" {
   }
 }
 
-# data "aws_iam_user" "me_IAM_user" {
-#   user_name = "me"
-# }
+resource "aws_eks_access_entry" "dev_sso_user" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-reserved/sso.amazonaws.com/${var.sso_role}"
+  type          = "STANDARD"
+}
 
-# resource "aws_eks_access_entry" "me" {
-#   cluster_name = module.eks.cluster_name
-#   principal_arn = data.aws_iam_user.me_IAM_user.arn
-#  // kubernetes_groups = 
-#   type = "STANDARD"           // "Standard" workflow
-# }
+resource "aws_eks_access_policy_association" "dev_sso_user_admin" {
+  cluster_name  = module.eks.cluster_name
+  principal_arn = aws_eks_access_entry.dev_sso_user.principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}

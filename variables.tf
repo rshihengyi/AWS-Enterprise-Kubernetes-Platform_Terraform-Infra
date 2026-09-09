@@ -29,16 +29,7 @@ variable "TF_REPO" {
   default = null
 }
 
-# locals {
-#   private_subnet_a_id = [
-#     aws_subnet.private_1a.id,
-#     aws_subnet.private_2a.id
-#   ]
-# }
-
-# locals {
-#   private_subnet_b_id = [
-#     aws_subnet.private_1b.id,
-#     aws_subnet.private_2b.id
-#   ]
-# }
+variable "sso_role" {
+  type    = string
+  default = null
+}
