@@ -46,4 +46,10 @@ jobs:
       
     - name: Apply Terraform
       run: terraform apply -auto-approve
+      env:
+        db_password: ${{ secrets.DB_PASSWORD }}
+        sso_role: ${{ secrets.SSO_IAM_ROLE }}
+        my_region: ${{ secrets.MY_REGION }}
+        region_a: ${{ secrets.REGION_A }}
+        region_b: ${{ secrets.REGION_B }}
         
