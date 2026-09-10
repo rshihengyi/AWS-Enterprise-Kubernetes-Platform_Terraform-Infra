@@ -1,5 +1,6 @@
 provider "aws" {
   region = var.my_region
+  profile = "DevUser"
 }
 
 // Source: https://developer.hashicorp.com/terraform/tutorials/kubernetes/helm-provider?in=terraform%2Fkubernetes
