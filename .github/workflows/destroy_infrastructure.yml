@@ -41,7 +41,7 @@ jobs:
         TF_VAR_region_a: ${{ secrets.REGION_A }}
         TF_VAR_region_b: ${{ secrets.REGION_B }}
       
-    - name: Apply Terraform
+    - name: Destroy Terraform
       run: terraform destroy -auto-approve
       env:
         TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
