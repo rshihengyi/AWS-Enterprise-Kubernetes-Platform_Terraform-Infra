@@ -34,7 +34,18 @@ jobs:
 
     - name: Plan Terraform
       run: terraform plan
+      env:
+        TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        TF_VAR_sso_role: ${{ secrets.SSO_IAM_ROLE }}
+        TF_VAR_my_region: ${{ secrets.MY_REGION }}
+        TF_VAR_region_a: ${{ secrets.REGION_A }}
+        TF_VAR_region_b: ${{ secrets.REGION_B }}
       
-    - name: Destroy Terraform
+    - name: Apply Terraform
       run: terraform destroy -auto-approve
-        
+      env:
+        TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+        TF_VAR_sso_role: ${{ secrets.SSO_IAM_ROLE }}
+        TF_VAR_my_region: ${{ secrets.MY_REGION }}
+        TF_VAR_region_a: ${{ secrets.REGION_A }}
+        TF_VAR_region_b: ${{ secrets.REGION_B }}
