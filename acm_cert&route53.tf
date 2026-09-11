@@ -40,7 +40,7 @@ resource "aws_route53_record" "ACM_ownership_CNAME_records" {
   ttl     = 60
 
   for_each = {
-    for dvo in aws_acm_certificate.tracker_cert.domain_validation_options : dvo.domain_name => {
+    for dvo in aws_acm_certificate.my_certs.domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
       type   = dvo.resource_record_type
       record = dvo.resource_record_value
@@ -49,8 +49,8 @@ resource "aws_route53_record" "ACM_ownership_CNAME_records" {
 }
 
 // ACM Certificate
-resource "aws_acm_certificate" "tracker_cert" {
-  domain_name       = "tracker.robs-portfolio.com"
+resource "aws_acm_certificate" "my_certs" {
+  domain_name       = "*.robs-portfolio.com"
   validation_method = "DNS"
 
   tags = {
@@ -63,8 +63,8 @@ resource "aws_acm_certificate" "tracker_cert" {
   }
 }
 
-resource "aws_acm_certificate_validation" "tracker_cert_valid" {
-  certificate_arn = aws_acm_certificate.tracker_cert.arn
+resource "aws_acm_certificate_validation" "my_certs_valid" {
+  certificate_arn = aws_acm_certificate.my_certs.arn
 
   // Fully Quialified Domain Name:
   /*
